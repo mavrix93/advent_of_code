@@ -17,7 +17,6 @@ fn open_file(file_path: &str) -> File {
         Err(why) => panic!("couldn't open {}: {}", display, why),
         Ok(file) => file,
     };
-
     file
 }
 
@@ -52,7 +51,7 @@ fn count_trees(
                     found_trees_set.insert(coordinates);
                     previous_height = height;
                 }
-                Detected::LowerTree => break,
+                Detected::LowerTree => (),
                 Detected::SameTree => (),
             }
         }
