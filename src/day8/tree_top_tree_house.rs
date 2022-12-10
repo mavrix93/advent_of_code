@@ -1,7 +1,10 @@
+use crate::utils;
 use std::collections::HashSet;
 use std::fs::File;
 use std::io::{prelude::*, BufReader};
 use std::path::Path;
+
+const TALLEST_TREE: i32 = 9;
 
 enum Detected {
     HigherTree(i32),
@@ -9,15 +12,45 @@ enum Detected {
     SameTree,
 }
 
-fn open_file(file_path: &str) -> File {
-    let path = Path::new(file_path);
-    let display = path.display();
+enum DetectedHouse {
+    AboveHouse,
+    HigherTreeAboveHouse,
+    LowerTreeBelowHouse,
+    HigherTreeBelowHouse(i32),
+}
 
-    let file = match File::open(&path) {
-        Err(why) => panic!("couldn't open {}: {}", display, why),
-        Ok(file) => file,
-    };
-    file
+#[derive(Eq, PartialEq, Hash)]
+pub struct Coordinates {
+    x: i32,
+    y: i32,
+}
+
+impl Coordinates {
+    fn new(x: i32, y: i32) -> Self {
+        Coordinates { x, y }
+    }
+}
+
+pub struct Map {
+    heights: Vec<Vec<i32>>,
+    dimension: Coordinates,
+}
+
+impl Map {
+    fn new(heights: Vec<Vec<i32>>) -> Map {
+        let dimension = (heights.len(), heights[0].len());
+        Map {
+            heights,
+            dimension: Coordinates {
+                x: dimension.0 as i32,
+                y: dimension.1 as i32,
+            },
+        }
+    }
+
+    fn get_height(&self, x: i32, y: i32) -> i32 {
+        self.heights[x as usize][y as usize]
+    }
 }
 
 fn read_lines(file: File) -> Vec<Vec<i32>> {
@@ -37,19 +70,22 @@ fn read_lines(file: File) -> Vec<Vec<i32>> {
 }
 
 fn count_trees(
-    map: &Vec<Vec<i32>>,
-    get_coordinates_strategy: impl Fn((usize, usize), (usize, usize)) -> (usize, usize),
-) -> HashSet<(usize, usize)> {
+    map: &Map,
+    get_coordinates_strategy: impl Fn(&Coordinates, &Coordinates) -> Coordinates,
+) -> HashSet<Coordinates> {
     let mut found_trees_set = HashSet::new();
-    let dim = (map.len(), map[0].len());
-    for i in 0..dim.0 {
+    for i in 0..map.dimension.x {
         let mut previous_height = -1;
-        for j in 0..dim.1 {
-            let coordinates = get_coordinates_strategy((i, j), dim);
-            match get_new_tree_height(map, previous_height, coordinates) {
+        for j in 0..map.dimension.y {
+            let coordinates = get_coordinates_strategy(&Coordinates::new(i, j), &map.dimension);
+            match get_new_tree_height(&map, previous_height, &coordinates) {
                 Detected::HigherTree(height) => {
                     found_trees_set.insert(coordinates);
                     previous_height = height;
+
+                    if height == TALLEST_TREE {
+                        break;
+                    }
                 }
                 Detected::LowerTree => (),
                 Detected::SameTree => (),
@@ -60,27 +96,31 @@ fn count_trees(
 }
 
 mod count_strategy {
-    pub fn from_left(coordinates: (usize, usize), dim: (usize, usize)) -> (usize, usize) {
-        coordinates
+    use crate::day8::tree_top_tree_house::Coordinates;
+
+    pub fn from_left(coordinates: &Coordinates, dim: &Coordinates) -> Coordinates {
+        Coordinates::new(coordinates.x, coordinates.y)
     }
-    pub fn from_right(coordinates: (usize, usize), dim: (usize, usize)) -> (usize, usize) {
-        (coordinates.0, dim.1 - coordinates.1 - 1)
+    pub fn from_right(coordinates: &Coordinates, dim: &Coordinates) -> Coordinates {
+        Coordinates::new(coordinates.x, dim.y - coordinates.y - 1)
     }
-    pub fn from_top(coordinates: (usize, usize), dim: (usize, usize)) -> (usize, usize) {
-        (coordinates.1, coordinates.0)
+    pub fn from_top(coordinates: &Coordinates, dim: &Coordinates) -> Coordinates {
+        Coordinates::new(coordinates.y, coordinates.x)
     }
-    pub fn from_bottom(coordinates: (usize, usize), dim: (usize, usize)) -> (usize, usize) {
-        (dim.0 - coordinates.1 - 1, coordinates.0)
+    pub fn from_bottom(coordinates: &Coordinates, dim: &Coordinates) -> Coordinates {
+        Coordinates::new(dim.x - coordinates.y - 1, coordinates.x)
     }
 }
 
-pub mod debug {
+mod debug {
+    use crate::day8::tree_top_tree_house::{Coordinates, Map};
     use std::collections::HashSet;
 
-    pub fn print_visible_trees(map: &Vec<Vec<i32>>, found_trees_set: &HashSet<(usize, usize)>) {
-        for i in 0..map.len() {
-            for j in 0..map[0].len() {
-                if found_trees_set.contains(&(i, j)) {
+    #[allow(dead_code)]
+    pub fn print_visible_trees(map: &Map, found_trees_set: &HashSet<Coordinates>) {
+        for x in 0..map.dimension.x {
+            for y in 0..map.dimension.y {
+                if found_trees_set.contains(&Coordinates::new(x, y)) {
                     print!("X");
                 } else {
                     print!("-");
@@ -91,12 +131,8 @@ pub mod debug {
     }
 }
 
-fn get_new_tree_height(
-    map: &Vec<Vec<i32>>,
-    previous_height: i32,
-    coordinates: (usize, usize),
-) -> Detected {
-    let height = map[coordinates.0][coordinates.1];
+fn get_new_tree_height(map: &Map, previous_height: i32, coordinates: &Coordinates) -> Detected {
+    let height = map.get_height(coordinates.x, coordinates.y);
     if height > previous_height {
         return Detected::HigherTree(height);
     } else if height == previous_height {
@@ -105,11 +141,173 @@ fn get_new_tree_height(
     Detected::LowerTree
 }
 
-pub fn solve(file_path: &str) {
-    let file = open_file(file_path);
-    let map = read_lines(file);
+fn get_new_tree_height_with_house(
+    map: &Map,
+    previous_height: i32,
+    coordinates: &Coordinates,
+    house_height: i32,
+) -> DetectedHouse {
+    let height = map.get_height(coordinates.x, coordinates.y);
 
-    let visible_trees: HashSet<(usize, usize)> = count_trees(&map, count_strategy::from_left)
+    if height >= house_height && height > previous_height {
+        return DetectedHouse::HigherTreeAboveHouse;
+    } else if height > house_height {
+        return DetectedHouse::AboveHouse;
+    } else if height > previous_height {
+        return DetectedHouse::HigherTreeBelowHouse(height);
+    };
+    DetectedHouse::LowerTreeBelowHouse
+}
+
+mod tree_count_score {
+    use super::*;
+    use std::cmp::max;
+
+    fn down(map: &Map, coordinates: &Coordinates, house_height: i32) -> i32 {
+        let mut count = 0;
+        let mut previous_height = -1;
+        for y in (coordinates.y + 1)..map.dimension.y {
+            let new_coordinates = Coordinates::new(coordinates.x, y);
+
+            match get_new_tree_height_with_house(
+                &map,
+                previous_height,
+                &new_coordinates,
+                house_height,
+            ) {
+                DetectedHouse::AboveHouse => break,
+                DetectedHouse::HigherTreeBelowHouse(height) => {
+                    previous_height = height;
+                    count += 1;
+                }
+                DetectedHouse::LowerTreeBelowHouse => (),
+                DetectedHouse::HigherTreeAboveHouse => {
+                    count += 1;
+                    break;
+                }
+            }
+        }
+        count
+    }
+    fn up(map: &Map, coordinates: &Coordinates, house_height: i32) -> i32 {
+        let mut count = 0;
+        let mut previous_height = -1;
+        for y in (0..coordinates.y).rev() {
+            let new_coordinates = Coordinates::new(coordinates.x, y);
+
+            match get_new_tree_height_with_house(
+                &map,
+                previous_height,
+                &new_coordinates,
+                house_height,
+            ) {
+                DetectedHouse::AboveHouse => break,
+                DetectedHouse::HigherTreeBelowHouse(height) => {
+                    previous_height = height;
+                    count += 1;
+                }
+                DetectedHouse::LowerTreeBelowHouse => (),
+                DetectedHouse::HigherTreeAboveHouse => {
+                    count += 1;
+                    break;
+                }
+            }
+        }
+        count
+    }
+
+    fn right(map: &Map, coordinates: &Coordinates, house_height: i32) -> i32 {
+        let mut count = 0;
+        let mut previous_height = -1;
+        for x in (coordinates.x + 1)..map.dimension.x {
+            let new_coordinates = Coordinates::new(x, coordinates.y);
+
+            match get_new_tree_height_with_house(
+                &map,
+                previous_height,
+                &new_coordinates,
+                house_height,
+            ) {
+                DetectedHouse::AboveHouse => break,
+                DetectedHouse::HigherTreeBelowHouse(height) => {
+                    previous_height = height;
+                    count += 1;
+                }
+                DetectedHouse::LowerTreeBelowHouse => (),
+                DetectedHouse::HigherTreeAboveHouse => {
+                    count += 1;
+                    break;
+                }
+            }
+        }
+        count
+    }
+
+    fn left(map: &Map, coordinates: &Coordinates, house_height: i32) -> i32 {
+        let mut count = 0;
+        let mut previous_height = -1;
+        for x in (0..coordinates.x).rev() {
+            let new_coordinates = Coordinates::new(x, coordinates.y);
+
+            match get_new_tree_height_with_house(
+                &map,
+                previous_height,
+                &new_coordinates,
+                house_height,
+            ) {
+                DetectedHouse::AboveHouse => break,
+                DetectedHouse::HigherTreeBelowHouse(height) => {
+                    previous_height = height;
+                    count += 1;
+                }
+                DetectedHouse::LowerTreeBelowHouse => (),
+                DetectedHouse::HigherTreeAboveHouse => {
+                    count += 1;
+                    break;
+                }
+            }
+        }
+        count
+    }
+
+    pub fn get_best_score(map: &Map, show_score_map: bool) -> i32 {
+        let mut best_score = 0;
+        for x in 0..map.dimension.x {
+            for y in 0..map.dimension.y {
+                let coordinates = Coordinates { x, y };
+                let house_height = map.get_height(x, y);
+                let score = right(&map, &coordinates, house_height)
+                    * left(&map, &coordinates, house_height)
+                    * up(&map, &coordinates, house_height)
+                    * down(&map, &coordinates, house_height);
+
+                if show_score_map {
+                    // print!("{} ", score);
+                    // print!("{}", map.get_height(x, y))
+                    print!(
+                        "-- ({} {} {} {})[{}] --",
+                        up(&map, &coordinates, house_height), // left
+                        left(&map, &coordinates, house_height), // up
+                        down(&map, &coordinates, house_height), // right
+                        right(&map, &coordinates, house_height), // down
+                        map.get_height(x, y)
+                    );
+                }
+
+                best_score = max(best_score, score)
+            }
+            if show_score_map {
+                println!("")
+            }
+        }
+        best_score
+    }
+}
+pub fn solve_first_part(file_path: &str) {
+    let file = utils::open_file(file_path);
+    let map = Map::new(read_lines(file));
+
+    let visible_trees: HashSet<Coordinates> = count_trees(&map, count_strategy::from_left)
         .into_iter()
         .chain(count_trees(&map, count_strategy::from_right))
         .chain(count_trees(&map, count_strategy::from_top))
@@ -118,4 +316,12 @@ pub fn solve(file_path: &str) {
 
     println!("Number of visible trees: {}", &visible_trees.len());
     debug::print_visible_trees(&map, &visible_trees);
+}
+
+pub fn solve_second_part(file_path: &str) {
+    let file = utils::open_file(file_path);
+    let map = Map::new(read_lines(file));
+
+    let best_score = tree_count_score::get_best_score(&map, false);
+    println!("Score: {}", best_score);
 }
