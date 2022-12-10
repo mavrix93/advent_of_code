@@ -11,13 +11,28 @@ fn move_head(rope_move: &Move, coordinates: &Coordinate) -> (Option<Move>, Coord
     }
 }
 
-fn move_tail(head_coordinates: &Coordinate, tail_coordinates: &Coordinate) -> Option<Coordinate> {
+fn move_tail(head_coordinates: &Coordinate, tail_coordinates: &Coordinate) -> Coordinate {
     let tail_coordinates_difference = tail_coordinates.subtract(head_coordinates);
 
     if tail_coordinates_difference.in_one_radius() {
-        return None;
+        return tail_coordinates.clone();
     }
-    Some(tail_coordinates_difference.ones_vector())
+    tail_coordinates_difference.ones_vector() + tail_coordinates.clone()
+}
+
+fn move_tails(
+    head_coordinates: &Coordinate,
+    tail_coordinates: &Vec<Coordinate>,
+) -> Vec<Coordinate> {
+    let mut _head_coordinates = head_coordinates.clone();
+    let mut _tail_coordinates = Vec::new();
+
+    for tail_coordinate in tail_coordinates {
+        let new_tail_coordinate = move_tail(&_head_coordinates, tail_coordinate);
+        _head_coordinates = tail_coordinate.clone();
+        _tail_coordinates.push(new_tail_coordinate)
+    }
+    _tail_coordinates
 }
 
 fn execute_turn(state: State) -> Option<State> {
@@ -25,15 +40,15 @@ fn execute_turn(state: State) -> Option<State> {
     match new_moves.pop_front() {
         Some(rope_move) => {
             let (new_move, new_head) = move_head(&rope_move, &state.head);
-            let tail_movement = move_tail(&new_head, &state.tail);
 
             if new_move.is_some() {
                 new_moves.push_front(new_move.unwrap());
             }
+            let new_tails = move_tails(&new_head, &state.tails);
 
             Some(State {
                 head: new_head,
-                tail: tail_movement.unwrap_or(Coordinate::zero()) + state.tail,
+                tails: new_tails,
                 moves: new_moves,
             })
         }
@@ -41,12 +56,12 @@ fn execute_turn(state: State) -> Option<State> {
     }
 }
 
-pub fn execute_moves(moves: VecDeque<Move>) -> Vec<State> {
-    let mut state = State {
-        head: Coordinate::new(0, 0),
-        tail: Coordinate::new(0, 0),
-        moves,
-    };
+pub fn execute_moves(
+    moves: VecDeque<Move>,
+    head: Coordinate,
+    tails: Vec<Coordinate>,
+) -> Vec<State> {
+    let mut state = State { head, tails, moves };
     let mut states = Vec::new();
     states.push(state.clone());
     loop {
@@ -61,18 +76,17 @@ pub fn execute_moves(moves: VecDeque<Move>) -> Vec<State> {
     states
 }
 
-pub fn extract_tail_coordinates(states: &Vec<State>) -> Vec<Coordinate> {
-    states
-        .iter()
-        .map(|state| state.tail.clone())
-        .collect::<Vec<Coordinate>>()
+pub fn extract_tail_coordinates(states: &Vec<State>) -> Vec<Vec<Coordinate>> {
+    let dim = states[0].tails.len();
+    let mut tail_coordinates = Vec::new();
+    for i in 0..dim {
+        tail_coordinates.push(states.iter().map(|state| state.tails[i].clone()).collect());
+    }
+    tail_coordinates
 }
 
 pub fn extract_head_coordinates(states: &Vec<State>) -> Vec<Coordinate> {
-    states
-        .iter()
-        .map(|state| state.head.clone())
-        .collect::<Vec<Coordinate>>()
+    states.iter().map(|state| state.head.clone()).collect()
 }
 
 pub fn unique_coordinates(coordinates: &Vec<Coordinate>) -> HashSet<Coordinate> {

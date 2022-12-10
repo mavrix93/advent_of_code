@@ -21,45 +21,40 @@ pub fn load_moves(file: File) -> VecDeque<Move> {
 pub mod debug {
     use crate::day9::entities::{Coordinate, State};
 
-    pub fn get_coordinates_map(
-        head_coordinates: &Vec<Coordinate>,
-        tail_coordinates: &Vec<Coordinate>,
-    ) -> Vec<Vec<String>> {
-        let max_x = tail_coordinates.iter().map(|c| c.x.abs()).max().unwrap();
-        let max_y = tail_coordinates.iter().map(|c| c.y.abs()).max().unwrap();
-
-        println!("Max x: {}, max y: {}", max_x, max_y);
-
-        let mut map = _initialize_map(head_coordinates);
-        for (i, coordinate) in head_coordinates.iter().enumerate() {
-            map[coordinate.y as usize][coordinate.x as usize] = format!(
-                "{}H{}-",
-                map[coordinate.y as usize][coordinate.x as usize], i
-            );
+    pub fn get_coordinates_map(coordinates: &Vec<Coordinate>) -> Vec<Vec<String>> {
+        let (mut map, offset_coordinates) = _initialize_map(coordinates);
+        for (i, coordinate) in coordinates.iter().enumerate() {
+            // map[(coordinate.y - offset_coordinates.y) as usize]
+            //     [(coordinate.x - offset_coordinates.x) as usize] = format!(
+            //     "{}-{}",
+            //     i,
+            //     map[(coordinate.y - offset_coordinates.y) as usize]
+            //         [(coordinate.x - offset_coordinates.x) as usize]
+            // );
+            map[(coordinate.y - offset_coordinates.y) as usize]
+                [(coordinate.x - offset_coordinates.x) as usize] = "#".to_string();
         }
 
-        // for (i, coordinate) in tail_coordinates.iter().enumerate() {
-        //     map[coordinate.y as usize][coordinate.x as usize] = format!(
-        //         "{}T{}-",
-        //         map[coordinate.y as usize][coordinate.x as usize], i
-        //     );
-        // }
         map
     }
 
     pub fn render_map(map: &Vec<Vec<String>>) {
         for row in map.iter() {
             for cell in row.iter() {
-                print!("{} ", cell);
+                print!("{}", cell);
             }
             println!();
         }
     }
 
-    fn _initialize_map(coordinates: &Vec<Coordinate>) -> Vec<Vec<String>> {
+    fn _initialize_map(coordinates: &Vec<Coordinate>) -> (Vec<Vec<String>>, Coordinate) {
         let mut map: Vec<Vec<String>> = Vec::new();
-        let max_x = coordinates.iter().map(|c| c.x).max().unwrap();
-        let max_y = coordinates.iter().map(|c| c.y).max().unwrap();
+        let offset = Coordinate::new(
+            coordinates.iter().map(|c| c.x).min().unwrap(),
+            coordinates.iter().map(|c| c.y).min().unwrap(),
+        );
+        let max_x = coordinates.iter().map(|c| c.x).max().unwrap() - offset.x;
+        let max_y = coordinates.iter().map(|c| c.y).max().unwrap() - offset.y;
 
         for _ in 0..(max_y + 1) {
             let mut row: Vec<String> = Vec::new();
@@ -68,6 +63,6 @@ pub mod debug {
             }
             map.push(row);
         }
-        map
+        (map, offset)
     }
 }

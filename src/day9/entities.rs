@@ -24,7 +24,7 @@ pub struct Coordinate {
 #[derive(Debug, Clone)]
 pub struct State {
     pub head: Coordinate,
-    pub tail: Coordinate,
+    pub tails: Vec<Coordinate>,
     pub moves: VecDeque<Move>,
 }
 

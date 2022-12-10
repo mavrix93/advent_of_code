@@ -13,5 +13,8 @@ fn main() {
     // tree_top_tree_house::solve_second_part("src/day8/resources/forrest.txt");
 
     // day9::rope_bridge::solve_first_part("src/day9/resources/example_moves.txt");
-    day9::rope_bridge::solve_first_part("src/day9/resources/moves.txt");
+    // day9::rope_bridge::solve_first_part("src/day9/resources/moves.txt");
+
+    // 2629 too high
+    day9::rope_bridge::solve_second_part("src/day9/resources/moves.txt");
 }
