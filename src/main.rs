@@ -1,3 +1,4 @@
+mod day10;
 mod day8;
 mod day9;
 mod utils;
@@ -16,5 +17,8 @@ fn main() {
     // day9::rope_bridge::solve_first_part("src/day9/resources/moves.txt");
 
     // 2629 too high
-    day9::rope_bridge::solve_second_part("src/day9/resources/moves.txt");
+    // day9::rope_bridge::solve_second_part("src/day9/resources/moves.txt");
+
+    // day10::cathode_ray_tube::solve_first_part("src/day10/resources/example_instructions.txt");
+    day10::cathode_ray_tube::solve_first_part("src/day10/resources/instructions.txt");
 }
