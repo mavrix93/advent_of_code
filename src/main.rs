@@ -3,8 +3,6 @@ mod day8;
 mod day9;
 mod utils;
 
-use crate::day8::tree_top_tree_house;
-
 fn main() {
     // tree_top_tree_house::solve_first_part("src/day8/resources/example_forrest.txt");
     // tree_top_tree_house::solve_first_part("src/day8/resources/forrest.txt");
@@ -20,5 +18,8 @@ fn main() {
     // day9::rope_bridge::solve_second_part("src/day9/resources/moves.txt");
 
     // day10::cathode_ray_tube::solve_first_part("src/day10/resources/example_instructions.txt");
-    day10::cathode_ray_tube::solve_first_part("src/day10/resources/instructions.txt");
+    // day10::cathode_ray_tube::solve_first_part("src/day10/resources/instructions.txt");
+
+    // day10::cathode_ray_tube::solve_second_part("src/day10/resources/example_instructions.txt");
+    day10::cathode_ray_tube::solve_second_part("src/day10/resources/instructions.txt");
 }

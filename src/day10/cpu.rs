@@ -1,9 +1,16 @@
 use crate::day10::entities;
+use crate::day10::observer::Observer;
 
-pub fn signal_strength(values: &Vec<i32>, cycles: &Vec<i32>) -> i32{
-    cycles.iter().map(|cycle| values[(cycle - 1) as usize] * cycle).sum::<i32>()
+pub fn signal_strength(values: &Vec<i32>, cycles: &Vec<i32>) -> i32 {
+    cycles
+        .iter()
+        .map(|cycle| values[(cycle - 1) as usize] * cycle)
+        .sum::<i32>()
 }
-pub fn execute_cpu_instructions(instructions: &Vec<entities::CpuInstruction>) -> Vec<i32> {
+pub fn execute_cpu_instructions(
+    instructions: &Vec<entities::CpuInstruction>,
+    observers: &mut Vec<impl Observer>,
+) -> Vec<i32> {
     let mut values = Vec::new();
     let mut cycle = 0;
     let mut value = 1;
@@ -11,7 +18,11 @@ pub fn execute_cpu_instructions(instructions: &Vec<entities::CpuInstruction>) ->
     let mut instructions_counter = 0;
 
     let mut _capacity = 0;
-    while (instructions_counter < instructions.len()) {
+    while instructions_counter < instructions.len() {
+        for observer in observers.iter_mut() {
+            observer.observe(cycle, value);
+        }
+
         values.push(value);
         _capacity += 1;
 
@@ -29,6 +40,10 @@ pub fn execute_cpu_instructions(instructions: &Vec<entities::CpuInstruction>) ->
             }
         }
         cycle += 1;
+    }
+
+    for observer in observers.iter_mut() {
+        observer.finished();
     }
     values
 }

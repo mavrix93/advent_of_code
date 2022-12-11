@@ -1,11 +1,15 @@
 use crate::day10::cpu::{execute_cpu_instructions, signal_strength};
+use crate::day10::entities::CrtDisplay;
 use crate::day10::helpers::load_cpu_instructions;
+use crate::day10::observer::Observer;
 use crate::utils::open_file;
 
 pub fn solve_first_part(file_path: &str) {
     let file = open_file(file_path);
     let instructions = load_cpu_instructions(file);
-    let values = execute_cpu_instructions(&instructions);
+
+    let x: Vec<Box<dyn Observer>> = Vec::new();
+    let values = execute_cpu_instructions(&instructions, &x);
 
     //println!("Instructions: {:?}", &instructions);
 
@@ -19,4 +23,12 @@ pub fn solve_first_part(file_path: &str) {
     println!("140: {:?}", &values[139]);
     println!("180: {:?}", &values[179]);
     println!("220: {:?}", &values[219]);
+}
+
+pub fn solve_second_part(file_path: &str) {
+    let file = open_file(file_path);
+    let instructions = load_cpu_instructions(file);
+
+    let mut x = vec![CrtDisplay::new(40, 6)];
+    execute_cpu_instructions(&instructions, &mut x);
 }
