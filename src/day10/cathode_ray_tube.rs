@@ -8,7 +8,7 @@ pub fn solve_first_part(file_path: &str) {
     let file = open_file(file_path);
     let instructions = load_cpu_instructions(file);
 
-    let x: Vec<Box<dyn Observer>> = Vec::new();
+    let mut x: Vec<Box<dyn Observer>> = Vec::new();
     let values = execute_cpu_instructions(&instructions, &x);
 
     //println!("Instructions: {:?}", &instructions);

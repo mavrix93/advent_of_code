@@ -1,4 +1,5 @@
 mod day10;
+mod day11;
 mod day8;
 mod day9;
 mod utils;
@@ -21,5 +22,7 @@ fn main() {
     // day10::cathode_ray_tube::solve_first_part("src/day10/resources/instructions.txt");
 
     // day10::cathode_ray_tube::solve_second_part("src/day10/resources/example_instructions.txt");
-    day10::cathode_ray_tube::solve_second_part("src/day10/resources/instructions.txt");
+    // day10::cathode_ray_tube::solve_second_part("src/day10/resources/instructions.txt");
+
+    day11::solution::solve_first_part("src/day11/resources/example_monkeys.txt");
 }
