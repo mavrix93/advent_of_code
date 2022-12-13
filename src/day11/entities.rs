@@ -1,11 +1,15 @@
 use std::fmt::Debug;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Item(pub i32);
 
 impl Item {
     pub fn apply_operation(&self, operation: &impl Fn(i32) -> i32) -> Self {
         Self(operation(self.0))
+    }
+
+    pub fn divide(&self, divisor: i32) -> Self {
+        Self(self.0 / divisor)
     }
 }
 
@@ -21,8 +25,6 @@ impl Debug for Monkey {
         f.debug_struct("Monkey")
             .field("name", &self.name)
             .field("items", &self.items)
-            .field("operation", &"Box<dyn Fn(i32) -> i32>")
-            .field("pass_test", &"Box<dyn Fn(&Item) -> String>")
             .finish()
     }
 }
@@ -56,10 +58,10 @@ impl Monkey {
 }
 
 #[derive(Debug)]
-pub struct Monkeys<'a>(pub Vec<&'a mut Monkey>);
+pub struct Monkeys(pub Vec<Monkey>);
 
-impl<'a> Monkeys<'a> {
-    pub fn get_monkey_by_name(&self, name: &str) -> Option<&&'a mut Monkey> {
-        self.0.iter().find(|monkey| monkey.name == name)
+impl<'a> Monkeys {
+    pub fn get_monkey_by_name(&mut self, name: &str) -> Option<&mut Monkey> {
+        self.0.iter_mut().find(|monkey| monkey.name == name)
     }
 }

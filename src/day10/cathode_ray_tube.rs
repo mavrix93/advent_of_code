@@ -9,20 +9,20 @@ pub fn solve_first_part(file_path: &str) {
     let instructions = load_cpu_instructions(file);
 
     let mut x: Vec<Box<dyn Observer>> = Vec::new();
-    let values = execute_cpu_instructions(&instructions, &x);
-
-    //println!("Instructions: {:?}", &instructions);
-
-    println!(
-        "Signal strength: {:?}",
-        signal_strength(&values, &vec![20, 60, 100, 140, 180, 220])
-    );
-    println!("20: {:?}", &values[19]);
-    println!("60: {:?}", &values[59]);
-    println!("100: {:?}", &values[99]);
-    println!("140: {:?}", &values[139]);
-    println!("180: {:?}", &values[179]);
-    println!("220: {:?}", &values[219]);
+    // let values = execute_cpu_instructions(&instructions, &x);
+    //
+    // //println!("Instructions: {:?}", &instructions);
+    //
+    // println!(
+    //     "Signal strength: {:?}",
+    //     signal_strength(&values, &vec![20, 60, 100, 140, 180, 220])
+    // );
+    // println!("20: {:?}", &values[19]);
+    // println!("60: {:?}", &values[59]);
+    // println!("100: {:?}", &values[99]);
+    // println!("140: {:?}", &values[139]);
+    // println!("180: {:?}", &values[179]);
+    // println!("220: {:?}", &values[219]);
 }
 
 pub fn solve_second_part(file_path: &str) {

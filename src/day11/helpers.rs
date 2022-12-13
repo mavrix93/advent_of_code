@@ -8,101 +8,87 @@ pub fn load_monkeys(mut file: File) -> Monkeys {
     let mut file_text = String::new();
     file.read_to_string(&mut file_text).unwrap();
 
-    let mut line_parts = file_text.trim().split("\n");
+    let mut line_parts = file_text.trim().split("\n\n");
 
-    loop {
-        match parse_monkey(&mut line_parts) {
-            Some(monkey) => monkeys.push(monkey),
-            None => break,
-        }
+    for monkey_section in line_parts {
+        monkeys.push(parse_monkey(monkey_section).unwrap());
     }
-
     Monkeys(monkeys)
 }
 
-fn parse_monkey(parts: &mut std::str::Split<&str>) -> Option<Monkey> {
-    match parts.next().map(|s| s.trim()) {
-        None => None,
-        Some(monkey_name_line) => Some({
-            let monkey_name = monkey_name_line.split_once(":").unwrap().0;
-            let item_values = parts
-                .next()
-                .unwrap()
-                .trim()
-                .rsplit_once("Starting items:")
-                .unwrap()
-                .1
-                .split(",")
-                .map(|x| Item(x.trim().parse::<i32>().unwrap()))
-                .collect();
+fn parse_monkey(monkey_section: &str) -> Option<Monkey> {
+    let mut parts = monkey_section.split("\n");
 
-            let operation = _get_operation(
-                parts
-                    .next()
-                    .unwrap()
-                    .trim()
-                    .split_once(":")
-                    .unwrap()
-                    .1
-                    .trim(),
-            );
+    let monkey_name = parts.next()?.trim().split_once(":")?.0;
+    let item_values = parts
+        .next()
+        .unwrap()
+        .trim()
+        .rsplit_once("Starting items:")
+        .unwrap()
+        .1
+        .split(",")
+        .map(|x| Item(x.trim().parse::<i32>().unwrap()))
+        .collect();
 
-            let _test_operation_number = parts
-                .next()
-                .unwrap()
-                .trim()
-                .split_once("Test: divisible by ")
-                .unwrap()
-                .1
-                .parse::<i32>()
-                .unwrap();
-            let _true_test_operation_receiver = parts
-                .next()
-                .unwrap()
-                .trim()
-                .split_once("monkey")
-                .unwrap()
-                .1
-                .trim()
-                .parse::<i32>()
-                .unwrap();
-            let _false_test_operation_receiver = parts
-                .next()
-                .unwrap()
-                .trim()
-                .split_once("monkey")
-                .unwrap()
-                .1
-                .trim()
-                .parse::<i32>()
-                .unwrap();
+    let operation = _get_operation(parts.next()?.trim().split_once(":").unwrap().1.trim());
 
-            Monkey::new(
-                monkey_name.to_string(),
-                operation,
-                move |x: &Item| {
-                    if (x.0 % _test_operation_number) == 0 {
-                        _true_test_operation_receiver.to_string()
-                    } else {
-                        _false_test_operation_receiver.to_string()
-                    }
-                },
-                item_values,
-            )
-        }),
-    }
+    let _test_operation_number = parts
+        .next()?
+        .trim()
+        .split_once("Test: divisible by ")
+        .unwrap()
+        .1
+        .parse::<i32>()
+        .unwrap();
+    let _true_test_operation_receiver = parts
+        .next()?
+        .trim()
+        .split_once("to")
+        .expect(format!("No 'to' found in {} for positive", monkey_section).as_str())
+        .1
+        .trim()
+        .to_string();
+    let _false_test_operation_receiver = parts
+        .next()?
+        .trim()
+        .split_once("to")
+        .expect(format!("No 'to' found in {} for false", monkey_section).as_str())
+        .1
+        .trim()
+        .to_string();
+
+    Some(Monkey::new(
+        monkey_name.to_string().to_lowercase(),
+        operation,
+        move |x: &Item| {
+            if (x.0 % _test_operation_number) == 0 {
+                _true_test_operation_receiver.clone()
+            } else {
+                _false_test_operation_receiver.clone()
+            }
+        },
+        item_values,
+    ))
 }
 
 fn _get_operation(operation: &str) -> Box<dyn Fn(i32) -> i32> {
     match operation.split_once("+") {
         Some((_, b)) => {
             let b = b.trim().parse::<i32>().unwrap();
-            Box::new(|x: i32| x + b)
+            Box::new(move |x: i32| x + b)
         }
         None => match operation.split_once("*") {
             Some((_, b)) => {
-                let b = b.trim().parse::<i32>().unwrap();
-                Box::new(|x: i32| x * b)
+                if (operation.trim().matches("old").count() == 2) {
+                    Box::new(move |x: i32| x * x)
+                } else {
+                    let b = b
+                        .trim()
+                        .parse::<i32>()
+                        .expect(format!("b: {}", operation).as_str());
+                    Box::new(move |x: i32| x * b)
+                }
             }
             None => panic!("Invalid operation"),
         },
