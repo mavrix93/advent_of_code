@@ -1,3 +1,5 @@
+extern crate core;
+
 mod day10;
 mod day11;
 mod day15;
@@ -27,5 +29,6 @@ fn main() {
 
     // day11::solution::solve_first_part("src/day11/resources/example_monkeys.txt");
 
-    day15::solution::solve_first_part("src/day15/resources/sensors.txt");
+    // day15::solution::solve_first_part("src/day15/resources/sensors.txt");
+    day15::solution::solve_second_part("src/day15/resources/sensors.txt");
 }

@@ -1,4 +1,4 @@
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub struct Coordinates {
     pub x: i32,
     pub y: i32,
@@ -10,11 +10,17 @@ impl Coordinates {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Measurement {
     pub sensor: Coordinates,
     pub beacon: Coordinates,
     pub distance: i32,
+}
+
+pub enum ScannedPosition {
+    Clear,
+    Occupied,
+    Scanned,
 }
 
 impl Measurement {
